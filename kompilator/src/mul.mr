@@ -1,0 +1,42 @@
+
+# clear res
+LOAD @0
+STORE $res
+
+#test B
+LOAD $B
+JZERO *fin
+
+#prep sB
+STORE $sB
+
+#test A,prep cA
+LOAD $A
+JNEG *a1
+JUMP *a2
+SUB 0 #*a1
+SUB $A
+STORE $cA #*a2
+
+#test A #*tA
+JZERO *fin
+
+#Get last bit
+SHIFT @-1
+SHIFT @1
+SUB $cA
+JZERO *sfAB
+LOAD $res
+ADD $sB
+STORE $res
+#*sfAB
+LOAD $sB
+SHIFT @1
+STORE $sB
+LOAD $cA
+SHIFT @-1
+STORE $cA
+JUMP *tA
+#*fin
+#CUSTOM
+
