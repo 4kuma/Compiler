@@ -17,6 +17,10 @@ Index = 21
 Size = 22
 Start = 23
 Place = 24
+Pos = 2
+Neg = 3
+Lef = 4
+Rig = 5
 
 
 def add_to_output(string):
@@ -259,19 +263,69 @@ class Sum(Expression):
 
 class Sub(Expression):
     def eval(self):
-        # TODO
-        return self.left.eval() - self.right.eval()
+        self.left.generate_left_value()
+        self.right.generate_right_value()
+        result: str = f'LOAD {Left_Value}' + '\n' + f'SUB {Right_Value}' + '\n' + f'STORE {Generated_Number}'
+        add_to_output(result)
 
 
 class Mul(Expression):
     def eval(self):
-        return self.left.eval() * self.right.eval()
+        self.left.generate_left_value()
+        self.right.generate_right_value()
+        add_to_output(generate_number(-1, Neg))
+        add_to_output(generate_number(1, Pos))
+        global output_list
+        output_list.append('SUB 0' + '\n')
+        output_list.append(f'STORE {Generated_Number}' + '\n')
+        output_list.append(f'LOAD {Right_Value}' + '\n')
+        x = len(output_list)
+        output_list.append(f'JZERO {x+23}' + '\n')
+        output_list.append(f'STORE {Rig}' + '\n')
+        output_list.append(f'LOAD {Left_Value}' + '\n')
+        y = len(output_list)
+        output_list.append(f'JNEG {y+2}' + '\n')
+        z = len(output_list)
+        output_list.append(f'JUMP {z+3}' + '\n')
+        output_list.append('SUB 0' + '\n')
+        output_list.append(f'SUB {Left_Value}' + '\n')
+        output_list.append(f'STORE {Lef}' + '\n')
+        a = len(output_list)
+        output_list.append(f'JZERO {a + 15}' + '\n')
+        output_list.append(f'SHIFT {Neg}' + '\n')
+        output_list.append(f'SHIFT {Pos}' + '\n')
+        output_list.append(f'SUB {Lef}' + '\n')
+        b = len(output_list)
+        output_list.append(f'JZERO {b + 4}' + '\n')
+        output_list.append(f'LOAD {Generated_Number}' + '\n')
+        output_list.append(f'ADD {Rig}' + '\n')
+        output_list.append(f'STORE {Generated_Number}' + '\n')
+        output_list.append(f'LOAD {Rig}' + '\n')
+        output_list.append(f'SHIFT {Pos}' + '\n')
+        output_list.append(f'STORE {Rig}' + '\n')
+        output_list.append(f'LOAD {Lef}' + '\n')
+        output_list.append(f'SHIFT {Neg}' + '\n')
+        output_list.append(f'STORE {Lef}' + '\n')
+        c = len(output_list)
+        output_list.append(f'JUMP {c-14}' + '\n')
+        output_list.append(f'LOAD {Left_Value}' + '\n')
+        d = len(output_list)
+        output_list.append(f'JPOS {d+4}' + '\n')
+        output_list.append(f'SUB 0' + '\n')
+        output_list.append(f'SUB {Generated_Number}' + '\n')
+        e = len(output_list)
+        output_list.append(f'JUMP {e+2}' + '\n')
+        output_list.append(f'LOAD {Generated_Number}' + '\n')
+        output_list.append(f'STORE {Right_Value}' + '\n')
 
 
 class Div(Expression):
     def eval(self):
-        # TODO
-        return self.left.eval() / self.right.eval()
+        self.left.generate_left_value()
+        self.right.generate_right_value()
+        add_to_output(generate_number(-1, Neg))
+        add_to_output(generate_number(1, Pos))
+        global output_list
 
 
 class Mod(Expression):
@@ -528,10 +582,10 @@ class ForTo:
         self.commands = commands
         self.counter = counter
         counter = counter + 2
-        variables[self.id] = self.counter
 
     def eval(self):
         # generate_number(int(self.value1), counter)
+        variables[self.id] = self.counter
         self.value1.generate_left_value()
         add_to_output(move_to_cell(Left_Value, self.counter))
         # add_to_variables(self.id)
@@ -553,6 +607,7 @@ class ForTo:
         print('he' + output_list[x+2])
         print(y)
         output_list[x+2] = f'JNEG {y}'
+        variables.pop(self.id)
 
 
 class ForDownTo:
@@ -565,10 +620,10 @@ class ForDownTo:
         self.commands = commands
         self.counter = counter
         counter = counter + 2
-        variables[self.id] = self.counter
 
     def eval(self):
         # generate_number(int(self.value1), counter)
+        variables[self.id] = self.counter
         self.value1.generate_left_value()
         add_to_output(move_to_cell(Left_Value, self.counter))
         # add_to_variables(self.id)
@@ -590,6 +645,7 @@ class ForDownTo:
         print('he' + output_list[x+2])
         print(y)
         output_list[x+2] = f'JNEG {y}'
+        variables.pop(self.id)
 
 
 class Commands:
