@@ -1,6 +1,7 @@
 from sly import Lexer, Parser
 from ast import *
 
+
 class Scanner(Lexer):
     # Set of token names.   This is always required
     tokens = {'DECLARE', 'BEGIN', 'END',
@@ -76,31 +77,35 @@ class Scanner(Lexer):
 
 
 class MyParser(Parser):
+
+    def __init__(self, c):
+        self.dir = c
+
     tokens = Scanner.tokens
 
     @_('DECLARE declarations BEGIN commands END')
     def program(self, p):
-        return Program(p.commands)
+        return Program(p.commands, self.dir)
 
     @_('BEGIN commands END')
     def program(self, p):
-        return Program(p.commands)
+        return Program(p.commands, self.dir)
 
     @_('declarations "," ID')
     def declarations(self, p):
-        Declaration(p.ID)
+        Declaration(p.ID, p.lineno)
 
     @_('declarations "," ID "(" NUM  ":" NUM ")"')
     def declarations(self, p):
-        DeclarationArray(p.ID, p.NUM0, p.NUM1)
+        DeclarationArray(p.ID, p.NUM0, p.NUM1, p.lineno)
 
     @_('ID')
     def declarations(self, p):
-        Declaration(p.ID)
+        Declaration(p.ID, p.lineno)
 
     @_('ID "(" NUM ":" NUM ")"')
     def declarations(self, p):
-        DeclarationArray(p.ID, p.NUM0, p.NUM1)
+        DeclarationArray(p.ID, p.NUM0, p.NUM1, p.lineno)
 
     @_('commands command')
     def commands(self, p):
@@ -205,21 +210,21 @@ class MyParser(Parser):
 
     @_('ID')
     def identifier(self, p):
-        return Pidentifier(p.ID)
+        return Pidentifier(p.ID, p.lineno)
 
     @_('ID "(" ID ")"')
     def identifier(self, p):
-        return PidentifierArrayID(p.ID0, p.ID1)
+        return PidentifierArrayID(p.ID0, p.ID1, p.lineno)
 
     @_('ID "(" NUM ")"')
     def identifier(self, p):
-        return PidentifierArrayNumber(p.ID, p.NUM)
+        return PidentifierArrayNumber(p.ID, p.NUM, p.lineno)
 
 
 if __name__ == '__main__':
     data = "ENDIF     END"
     lexer = Scanner()
-    parser = MyParser()
+    parser = MyParser(sys.argv[2])
 
     # for tok in lexer.tokenize(data):
     #     print('type=%r, value=%r' % (tok.type, tok.value))

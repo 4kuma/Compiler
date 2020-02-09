@@ -46,17 +46,12 @@ def add_to_variables(key):
     else:
         variables[key] = counter
         counter += 1
-        print(variables)
 
 
-# Negates number which is in register 0 (p0)
-# Registers used: 0-1
 def negate_number() -> str:
     return 'STORE 1' + '\n' + 'SUB 0\nSUB 1' + '\n'
 
 
-# Generates constant value and stores it in destination_register
-# registers used: 0-1
 def generate_number(x: int, destination_register) -> str:
     one_register: int = 1
     result: str = f'SUB 0' + '\n' + f'INC' + '\n' + f'STORE {one_register}' + '\n' + 'DEC' + '\n'
@@ -120,7 +115,6 @@ class ArrayInfo:
 class Number:
     def __init__(self, value):
         self.value = value
-        print(self.value)
 
     def eval(self):
         add_to_output(generate_number(int(self.value), Generated_Number))
@@ -148,21 +142,28 @@ class IdValue:
 
 
 class Declaration:
-    def __init__(self, variable):
+    def __init__(self, variable, lineno):
+        if variable in variables:
+            print(f"Błąd w linii {lineno}: druga deklaracja zmiennej {variable}")
+            sys.exit()
         self.variable = variable
-        print(self.variable)
         add_to_variables(variable)
 
 
 class DeclarationArray:
-    def __init__(self, variable, start, end):
+    def __init__(self, variable, start, end, lineno):
+        global arrays
+        if int(end) - int(start) < 0:
+            print(f"Błąd w linii {lineno}: niewlasciwy zakres tablicy {variable}")
+            sys.exit()
+        if variable in arrays:
+            print(f"Błąd w linii {lineno}: druga deklaracja zmiennej tablicowej {variable}")
+            sys.exit()
         self.variable = variable
         string = '{}({}:{})'.format(variable, start, end)
-        global arrays
         global counter
         arrays[variable] = ArrayInfo(counter, int(end) - int(start), int(start))
-        for x in range(int(start), int(end) + 1):
-            add_to_variables(variable + str(x))
+        counter += int(end) - int(start) + 1
 
 
 class Identifier:
@@ -174,74 +175,134 @@ class Identifier:
 
 
 class Pidentifier:
-    def __init__(self, id):
+    def __init__(self, id, lineno):
         self.id = id
-        print(self.id)
+        self.lineno = lineno
 
     def eval(self):
         if self.id in variables:
             generate_number(variables[self.id], Variable_Index)
         else:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id}")
             sys.exit()
 
     def getValue(self):
+        if self.id not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id}")
+            sys.exit()
         return self.id
 
     def generate_left_value(self):
+        if self.id not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id}")
+            sys.exit()
         add_to_output(move_to_cell(variables[self.id], Left_Value))
 
     def generate_right_value(self):
+        if self.id not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id}")
+            sys.exit()
         add_to_output(move_to_cell(variables[self.id], Right_Value))
 
     def generate_to_assign(self):
+        if self.id not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id}")
+            sys.exit()
         add_to_output(generate_number(variables[self.id], Variable_Index))
 
 
 class PidentifierArrayID:
-    def __init__(self, id1, id2):
+    def __init__(self, id1, id2, lineno):
         self.id = id1 + id2
         self.id1 = id1
         self.id2 = id2
-        print(self.id)
+        self.lineno = lineno
 
     def eval(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        if self.id2 not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id2}")
+            sys.exit()
         index = variables[self.id2]
 
     def getValue(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        if self.id2 not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id2}")
+            sys.exit()
         return self.id
 
     def generate_left_value(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        if self.id2 not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id2}")
+            sys.exit()
         add_to_output(pidentifier_expression_case(arrays[self.id1], variables[self.id2], Left_Value))
 
     def generate_right_value(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        if self.id2 not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id2}")
+            sys.exit()
         add_to_output(pidentifier_expression_case(arrays[self.id1], variables[self.id2], Right_Value))
 
     def generate_to_assign(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        if self.id2 not in variables:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna {self.id2}")
+            sys.exit()
         add_to_output(pidentifier_assignment_case(arrays[self.id1], variables[self.id2]))
 
 
 class PidentifierArrayNumber:
-    def __init__(self, id1, id2):
+    def __init__(self, id1, id2, lineno):
         self.id = id1 + id2
-        print(self.id)
+        self.id1 = id1
+        self.id2 = id2
+        self.lineno = lineno
 
     def eval(self):
-        if self.id in variables:
-            generate_number(variables[self.id], Variable_Index)
-        else:
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
             sys.exit()
+        generate_number(variables[self.id], Variable_Index)
 
     def getValue(self):
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
         return self.id
 
     def generate_left_value(self):
-        add_to_output(move_to_cell(variables[self.id], Left_Value))
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        ind = arrays[self.id1].index + (int(self.id2) - arrays[self.id1].start)
+        add_to_output(move_to_cell(ind, Left_Value))
 
     def generate_right_value(self):
-        add_to_output(move_to_cell(variables[self.id], Right_Value))
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        ind = arrays[self.id1].index + (int(self.id2) - arrays[self.id1].start)
+        add_to_output(move_to_cell(ind, Right_Value))
 
     def generate_to_assign(self):
-        add_to_output(generate_number(variables[self.id], Variable_Index))
+        if self.id1 not in arrays:
+            print(f"Błąd w linii {self.lineno}: niezadeklarowana zmienna tablicowa {self.id1}")
+            sys.exit()
+        ind = arrays[self.id1].index + (int(self.id2) - arrays[self.id1].start)
+        add_to_output(generate_number(ind, Variable_Index))
 
 
 class Expression:
@@ -646,7 +707,6 @@ class IfElse:
             i.eval()
         output_list.append('')
         y = len(output_list)
-        print('xd' + output_list[x + 1])
         if isinstance(self.condition, Eq):
             output_list[x] = f'JPOS {y}'
             output_list[x + 1] = f'JNEG {y}'
@@ -668,7 +728,6 @@ class IfElse:
         for i in self.commands1.commands:
             i.eval()
         z = len(output_list)
-        print('wtf' + output_list[x - 1])
         output_list[y - 1] = f'JUMP {z}'
 
 
@@ -805,11 +864,8 @@ class ForTo:
         add_to_output(f'LOAD {self.counter}')
         add_to_output(f'INC')
         add_to_output(f'STORE {self.counter}')
-        print(x)
         add_to_output(f'JUMP {x}')
         y = len(output_list)
-        print('he' + output_list[x+2])
-        print(y)
         output_list[x+2] = f'JNEG {y}'
         variables.pop(self.id)
 
@@ -843,11 +899,8 @@ class ForDownTo:
         add_to_output(f'LOAD {self.counter}')
         add_to_output(f'DEC')
         add_to_output(f'STORE {self.counter}')
-        print(x)
         add_to_output(f'JUMP {x}')
         y = len(output_list)
-        print('he' + output_list[x+2])
-        print(y)
         output_list[x+2] = f'JNEG {y}'
         variables.pop(self.id)
 
@@ -866,15 +919,14 @@ class Commands:
 
 
 class Program:
-    def __init__(self, commands):
+    def __init__(self, commands, directory):
         self.commands = commands
         for i in commands.commands:
             i.eval()
         add_to_output("HALT")
-        print(output_list)
         smth = ''
         for i in output_list:
             smth = smth + i + '\n'
-        out = open("out.mr", "w", newline="\n")
+        out = open(directory, "w", newline="\n")
         out.write(smth)
         out.close()
